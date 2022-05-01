@@ -1,6 +1,7 @@
 class Settings:
-    def __init__(self):
-        self.fps = 60
-        self.screen_width, self.screen_height = 1200, 800
-        self.bg_color = (0, 0, 0)
-        self.player_speed = 2
+    FPS = 60
+    SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
+    BG_COLOR = (0, 0, 0)
+    PLAYER_SPEED = 5
+    BASIC_ENEMY_SPEED = 5
+    PROJECTILE_SPEED = 7

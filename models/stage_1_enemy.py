@@ -3,5 +3,6 @@ from actor import Actor
 
 @dataclass
 class Stage1Enemy(Actor):
-    points: int
+    __points: int = 30
+    
     

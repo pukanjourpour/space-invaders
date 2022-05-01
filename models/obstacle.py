@@ -1,2 +1,2 @@
-class Wall:
+class Obstacle:
     pass
