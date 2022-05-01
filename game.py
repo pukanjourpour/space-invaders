@@ -17,7 +17,7 @@ class Game:
 
         self.actors: list[Actor] = []
         self.projectiles: list[Projectile] = []
-        player = Player(
+        player: Actor = Player(
             Settings.SCREEN_WIDTH / 2,
             Settings.SCREEN_HEIGHT - 50,
             Settings.PLAYER_SPEED,

@@ -16,5 +16,5 @@ class ProjectileController:
                 ProjectileController.remove(p, projectiles)
 
     @staticmethod
-    def remove(p: Projectile, projectiles: list[Projectile]):
+    def remove(p: Projectile, projectiles: list[Projectile]) -> None:
         projectiles.remove(p)
