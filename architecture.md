@@ -1,20 +1,20 @@
  ```mermaid
  classDiagram
-    Game <--> ActorController
-    Game <--> ObstacleController
-    Game <--> ProjectileController
-    Game <--> GUIController
-    Game <--> GameController
-    Game <--> SpriteController
+    ViewPyGame "1" *-- GameState
 
-    ActorController <--> Stage1Enemy
-    ActorController <--> Stage2Enemy
-    ActorController <--> Stage3Enemy
-    ActorController <--> BonusEnemy
-    ActorController <--> Player
+    ActorController --o ViewPyGame
+    ObstacleController --o ViewPyGame
+    ProjectileController --o ViewPyGame
+    LevelController --o ViewPyGame
+    SpriteController --o ViewPyGame
 
-    ObstacleController <--> Obstacle
-    ProjectileController <--> Projectile
+    GameState *-- Stage1Enemy
+    GameState *-- Stage2Enemy
+    GameState *-- Stage3Enemy
+    GameState *-- BonusEnemy
+    GameState *-- Player
+    GameState *-- Obstacle
+    GameState *-- Projectile
 
     BonusEnemy --|> Actor
     Stage1Enemy --|> Actor
@@ -22,77 +22,80 @@
     Stage3Enemy --|> Actor
     Player --|> Actor
 
+    Actor --|> Drawable
+    Obstacle --|> Drawable
+    Projectile --|> Drawable
 
-    class Game{
+    class GameState{
         actors: List[Actor]
-        particles: List[Particles]
         obstacles: List[Obstacle]
+        projectiles: List[Projectile]
+        score: int
+        level: int
 
-        run_game()
-        check_events()
-        check_input()
-        update_screen()
+    }
+
+    class ViewPyGame{
+        game: GameState
+        sprites_by_type: map[Drawable, imgs]
+        run()
+        draw()
+        draw_gui()
+        update()
+        get_keyboard_input()
         check_collisions()
         
     }
 
     class ActorController{
-        draw(screen, actors: List[Actor])
-        move(actors: List[Actor])
-        move(player)
-        move(enemy)
+        act(actors, keyboard_input, delta_time)
+        move(player, direction, delta_time)
+        move(enemy, delta_time)
+        change_enemies_direction(actors)
         shoot(player)
         shoot(enemy)
-    }
-
-    class SpriteController{
-        convert_to_list(spritesheet: img)
-        get_player_sprites(sprites: List[img])
-        get_stage1_enemy_sprites(sprites: List[img])
-        get_stage2_enemy_sprites(sprites: List[img])
-        get_stage3_enemy_sprites(sprites: List[img])
-        get_bonus_enemy_sprites(sprites: List[img])
-        get_obstacle_sprites(sprites: List[img])
-        get_particle_sprites(sprites: List[img])
-    }
-
-    class GameController{
-        generate_level(level:int)
+        receive_hit(actor)
     }
 
     class ObstacleController{
-        draw(screen, obstacles List[Obstacle])
-        deform(obstacles)
+        receive_hit(obstacles, obstacle)
     }
 
     class ProjectileController{
-        draw(screen, particles: List[Particle])
-        move(particles:List[Particle])
+        move(projectiles, delta_time)
+        receive_hit(projectiles, projectile)
     }
 
-    class GUIController{
-        draw_main_menu()
-        draw_side_gui(score, lives_count)
-        handle_click()
+    class SpriteController{
+        convert_to_map(spritesheet)
+    }
+
+    class LevelController{
+        generate_level(level: int)
     }
     
     class Actor{
         position: int
         size: int
-        sprites: List[img]
+        speed: int
+        direction: int
+    }
+
+    class Player{
+        lives_count: int
     }
 
     class Obstacle{
-        sprites: List[img]
         position: int
         size: int
+        hit_count: int
     }
 
     class Projectile {
-        sprites: List[img]
         position: int
         size: int
-        y_speed: int
+        speed: int
+        direction: int
 
     }
 
