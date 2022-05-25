@@ -2,25 +2,23 @@
  classDiagram
     ViewPyGame "1" *-- GameState
 
-    ActorController --o ViewPyGame
-    ObstacleController --o ViewPyGame
-    ProjectileController --o ViewPyGame
-    LevelController --o ViewPyGame
-    SpriteController --o ViewPyGame
+    GameState o-- EnemyStage1
+    GameState o-- EnemyStage2
+    GameState o-- EnemyStage3
+    GameState o-- EnemyBonus
+    GameState o-- Player
+    GameState o-- Obstacle
+    GameState o-- Projectile
 
-    GameState *-- Stage1Enemy
-    GameState *-- Stage2Enemy
-    GameState *-- Stage3Enemy
-    GameState *-- BonusEnemy
-    GameState *-- Player
-    GameState *-- Obstacle
-    GameState *-- Projectile
-
-    BonusEnemy --|> Actor
-    Stage1Enemy --|> Actor
-    Stage2Enemy --|> Actor
-    Stage3Enemy --|> Actor
+    EnemyBonus --|> Actor
+    EnemyStage1 --|> Actor
+    EnemyStage2 --|> Actor
+    EnemyStage3 --|> Actor
     Player --|> Actor
+
+    ControllerActor .. Actor
+    ControllerObstacle .. Obstacle
+    ControllerProjectile .. Projectile
 
     Actor --|> Drawable
     Obstacle --|> Drawable
@@ -47,7 +45,7 @@
         
     }
 
-    class ActorController{
+    class ControllerActor{
         act(actors, keyboard_input, delta_time)
         move(player, direction, delta_time)
         move(enemy, delta_time)
@@ -57,26 +55,24 @@
         receive_hit(actor)
     }
 
-    class ObstacleController{
+    class ControllerObstacle{
         receive_hit(obstacles, obstacle)
     }
 
-    class ProjectileController{
+    class ControllerProjectile{
         move(projectiles, delta_time)
         receive_hit(projectiles, projectile)
     }
 
-    class SpriteController{
+    class ControllerSprite{
         convert_to_map(spritesheet)
     }
 
-    class LevelController{
+    class ControllerLevel{
         generate_level(level: int)
     }
     
     class Actor{
-        position: int
-        size: int
         speed: int
         direction: int
     }
@@ -86,17 +82,17 @@
     }
 
     class Obstacle{
-        position: int
-        size: int
         hit_count: int
     }
 
     class Projectile {
-        position: int
-        size: int
         speed: int
         direction: int
+    }
 
+    class Drawable {
+        position: int
+        size: int
     }
 
 ```
