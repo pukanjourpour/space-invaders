@@ -1,6 +1,5 @@
 import time
 import pygame
-from models.actor import Actor
 from models.player import Player
 from models.projectile import Projectile
 from settings import Settings
@@ -10,9 +9,13 @@ class ActorController:
     __last_shot_time: float = -1
 
     @staticmethod
-    def draw(screen: pygame.Surface, actors: list[Actor]) -> None:
+    def draw(screen: pygame.Surface, actors) -> None:
         for a in actors:
-            pygame.draw.rect(screen, (0, 180, 0), a.get_rectangle())
+            pygame.draw.rect(
+                screen,
+                (0, 180, 0),
+                pygame.Rect(30,30,30,30)
+            )
 
     @staticmethod
     def move(player: Player, direction: str) -> None:
@@ -26,7 +29,7 @@ class ActorController:
             player.move(1)
 
     @staticmethod
-    def shoot(player: Player, projectiles: list[Projectile]) -> None:
+    def shoot(player: Player, projectiles) -> None:
         current_shot_time: float = time.time()
         if (
             ActorController.__last_shot_time == -1

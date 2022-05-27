@@ -15,13 +15,12 @@ class Game:
         )
         pygame.display.set_caption("Space Invaders")
 
-        self.actors: list[Actor] = []
-        self.projectiles: list[Projectile] = []
+        self.actors = []
+        self.projectiles = []
         player: Actor = Player(
             Settings.SCREEN_WIDTH / 2,
             Settings.SCREEN_HEIGHT - 50,
             Settings.PLAYER_SPEED,
-            [""],
         )
 
         self.actors.append(player)
