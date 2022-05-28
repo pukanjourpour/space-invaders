@@ -79,6 +79,7 @@
 
     class Player{
         lives_count: int
+        score: int
     }
 
     class Obstacle{
