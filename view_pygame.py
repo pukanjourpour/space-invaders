@@ -45,6 +45,8 @@ class ViewPyGame:
         self._screen.fill(Settings.BG_COLOR)
         if self._main_menu:
             self._draw_main_menu()
+        elif self._pause:
+            self._draw_main_menu()
         else:
             self._draw_side_menu()
 
@@ -70,10 +72,13 @@ class ViewPyGame:
 
     def _update(self, delta_time: int) -> None:
         keyboard_input = self._get_keyboard_input()
-        ControllerActor.act(
-            self._gamestate.actors, keyboard_input, self._gamestate, delta_time
-        )
-        ControllerProjectile.move(self._gamestate.projectiles, delta_time)
+        if keyboard_input[pygame.K_ESCAPE]:
+            self._pause = not self._pause
+        if not self._pause:
+            ControllerActor.act(
+                self._gamestate.actors, keyboard_input, self._gamestate, delta_time
+            )
+            ControllerProjectile.move(self._gamestate.projectiles, delta_time)
 
     def _draw_main_menu(self) -> None:
         unit_height = Settings.SMALL_FONT_SIZE + Settings.BTN_PADDING * 2
@@ -221,8 +226,7 @@ class ViewPyGame:
                         self._running = False
 
     def _get_keyboard_input(self) -> Sequence[bool]:
-        keyboard_input = pygame.key.get_pressed()
-        return keyboard_input
+        return pygame.key.get_pressed()
 
     def _check_collisions(self) -> None:
         pass
