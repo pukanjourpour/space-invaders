@@ -24,7 +24,17 @@ class ViewPyGame:
 
     def run_game(self) -> None:
         start_time_millis = time.time()
+        start_time = time.time()
+        timer =  0
         while self._running:
+            current_time = time.time()
+            timer += current_time- start_time
+            start_time = current_time
+            time_text = pygame.font.SysFont("Corbel", Settings.SMALL_FONT_SIZE).render(
+                str(timer), True, (155, 255, 255)
+            )
+            self._screen.fill(Settings.BG_COLOR)
+            self._screen.blit(time_text, (10, 10))
             if not self._main_menu:
                 current_time_millis = time.time()
                 if current_time_millis - start_time_millis >= 1 / Settings.FPS:
@@ -78,7 +88,7 @@ class ViewPyGame:
         pass
 
     def _draw(self):
-        self._screen.fill(Settings.BG_COLOR)
+        # self._screen.fill(Settings.BG_COLOR)
         if self._main_menu:
             self._draw_menu(0)
         elif self._pause:

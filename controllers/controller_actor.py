@@ -29,11 +29,10 @@ class ControllerActor:
 
         for actor in actors:
             if isinstance(actor, Player):
-                player = actor
-                if inputs[pygame.K_d]:
-                    ControllerActor._move(player, 1, delta_time)
                 if inputs[pygame.K_a]:
-                    ControllerActor._move(player, -1, delta_time)
+                    ControllerActor._move(actor, -1, delta_time)
+                if inputs[pygame.K_d]:
+                    ControllerActor._move(actor, 1, delta_time)
                 if inputs[pygame.K_SPACE]:
                     ControllerActor._shoot(player, gamestate)
             else:
