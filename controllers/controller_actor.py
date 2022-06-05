@@ -33,8 +33,9 @@ class ControllerActor:
                     ControllerActor._move(actor, -1, delta_time)
                 if inputs[pygame.K_d]:
                     ControllerActor._move(actor, 1, delta_time)
+
                 if inputs[pygame.K_SPACE]:
-                    ControllerActor._shoot(player, gamestate)
+                    ControllerActor._shoot(actor, gamestate)
             else:
                 enemies.append(actor)
 
@@ -46,12 +47,16 @@ class ControllerActor:
             and new_player_x >= 10
         ):
             player.x = int(new_player_x)
+        if new_player_x <= 10:
+            player.x = 10
+        if new_player_x + player.width >= Settings.SCREEN_WIDTH - 10:
+            player.x = Settings.SCREEN_WIDTH - 10 - player.width
 
     @staticmethod
     def _shoot(player: Player, gamestate: GameState):
         current_time = time()
         if (
-            current_time - ControllerActor._last_shot_time >= 1
+            current_time - ControllerActor._last_shot_time >= 0.5
             or ControllerActor._last_shot_time == 0
         ):
             projectile = Projectile(

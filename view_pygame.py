@@ -13,7 +13,7 @@ class ViewPyGame:
         self._gamestate: GameState = None
         self._pause: bool = False
         self._main_menu: bool = True
-
+        self._in_file_browser = False
         pygame.init()
         self._screen: pygame.Surface = pygame.display.set_mode(
             (Settings.SCREEN_WIDTH, Settings.SCREEN_HEIGHT)
@@ -23,34 +23,28 @@ class ViewPyGame:
         self._init_buttons()
 
     def run_game(self) -> None:
-        start_time_millis = time.time()
         start_time = time.time()
-        timer =  0
         while self._running:
             current_time = time.time()
-            timer += current_time- start_time
-            start_time = current_time
-            time_text = pygame.font.SysFont("Corbel", Settings.SMALL_FONT_SIZE).render(
-                str(timer), True, (155, 255, 255)
-            )
-            self._screen.fill(Settings.BG_COLOR)
-            self._screen.blit(time_text, (10, 10))
-            if not self._main_menu:
-                current_time_millis = time.time()
-                if current_time_millis - start_time_millis >= 1 / Settings.FPS:
-                    delta_time = current_time_millis - start_time_millis
-                    self._update(delta_time)
-                    start_time_millis = current_time_millis
+            if current_time - start_time >= 1 / Settings.FPS:
+                delta_time = 0
+                if not self._in_file_browser:
+                    delta_time = current_time - start_time
+                else:
+                    self._in_file_browser = False
+                                        
+                self._update(delta_time)
+                start_time = current_time
             self._draw()
-            self._check_events()
 
     def _update(self, delta_time: int) -> None:
         keyboard_input = self._get_keyboard_input()
-        if not self._pause:
+        if not self._pause and not self._main_menu:
             ControllerActor.act(
                 self._gamestate.actors, keyboard_input, self._gamestate, delta_time
             )
             ControllerProjectile.move(self._gamestate.projectiles, delta_time)
+        self._check_events()
 
     def _check_events(self) -> None:
         for event in pygame.event.get():
@@ -64,6 +58,7 @@ class ViewPyGame:
                         self._main_menu = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_load_game):
                         self._gamestate = GameState(False)
+                        self._in_file_browser = True
                         self._main_menu = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_quit_game):
                         self._running = False
@@ -76,6 +71,7 @@ class ViewPyGame:
                         self._gamestate = GameState(True)
                         self._pause = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_save_and_quit):
+                        self._gamestate.save_to_json()
                         self._running = False
 
             if event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
@@ -88,13 +84,15 @@ class ViewPyGame:
         pass
 
     def _draw(self):
-        # self._screen.fill(Settings.BG_COLOR)
+        self._screen.fill((0, 0, 0))
+
         if self._main_menu:
             self._draw_menu(0)
         elif self._pause:
             self._draw_menu(1)
         else:
             self._draw_side_menu()
+
 
             for projectile in self._gamestate.projectiles:
                 pygame.draw.rect(

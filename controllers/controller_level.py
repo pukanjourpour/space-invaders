@@ -1,4 +1,3 @@
-from telnetlib import SE
 from typing import List, Tuple
 
 from models.actor import Actor

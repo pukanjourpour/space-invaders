@@ -1,7 +1,10 @@
-class Settings:
+from enum import IntEnum
+
+class Settings(IntEnum):
     FPS = 60
-    SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
-    BG_COLOR = (0, 0, 0)
+    REAL_FPS = 0
+    SCREEN_WIDTH = 1200
+    SCREEN_HEIGHT = 800
     PLAYER_SPEED = 450
     BASIC_ENEMY_SPEED = 5
     PROJECTILE_SPEED = 600
@@ -11,4 +14,3 @@ class Settings:
     BTN_HEIGHT = 45
     BTN_PADDING = 5
     SMALL_FONT_SIZE = 35
-    
