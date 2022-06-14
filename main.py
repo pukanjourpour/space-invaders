@@ -1,6 +1,6 @@
 from view_pygame import ViewPyGame
 
-class Launcher:
+class Main:
     def __init__(self):
         self.game = ViewPyGame()
         
@@ -8,5 +8,5 @@ class Launcher:
         self.game.run_game()
 
 if __name__ == "__main__":
-    launcher = Launcher()
-    launcher.run()
+    main = Main()
+    main.run()

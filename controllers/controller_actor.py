@@ -1,6 +1,5 @@
 from time import time
 from typing import List, Sequence
-
 import pygame
 from gamestate import GameState
 

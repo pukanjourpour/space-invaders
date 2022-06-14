@@ -1,9 +1,14 @@
 from typing import Dict, Sequence, Tuple, List
 import pygame, time
 from controllers.controller_actor import ControllerActor
+from controllers.controller_level import ControllerLevel
 from controllers.controller_projectile import ControllerProjectile
 from gamestate import GameState
+from models.enemy_stage_1 import EnemyStage1
+from models.player import Player
+from models.projectile import Projectile
 from settings import Settings
+from tkinter import filedialog as fd, Tk
 
 
 class ViewPyGame:
@@ -32,7 +37,7 @@ class ViewPyGame:
                     delta_time = current_time - start_time
                 else:
                     self._in_file_browser = False
-                                        
+
                 self._update(delta_time)
                 start_time = current_time
             self._draw()
@@ -54,12 +59,12 @@ class ViewPyGame:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     if self._check_hover((mouse_x, mouse_y), self._btn_new_game):
-                        self._gamestate = GameState(True)
+                        self._init_gamestate(new_game=True)
                         self._main_menu = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_load_game):
-                        self._gamestate = GameState(False)
-                        self._in_file_browser = True
-                        self._main_menu = False
+                        response = self._init_gamestate(new_game=False)
+                        if response == 1:
+                            self._main_menu = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_quit_game):
                         self._running = False
             elif self._pause:
@@ -68,20 +73,68 @@ class ViewPyGame:
                     if self._check_hover((mouse_x, mouse_y), self._btn_continue):
                         self._pause = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_restart):
-                        self._gamestate = GameState(True)
+                        self._init_gamestate(new_game=True)
                         self._pause = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_save_and_quit):
-                        self._gamestate.save_to_json()
-                        self._running = False
+                        self._save_game()
+                        if response == 1:
+                            self._running = False
 
             if event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
                 self._pause = not self._pause
+                # TODO time the pauses to prevent projectile cooldown bugs
 
     def _get_keyboard_input(self) -> Sequence[bool]:
         return pygame.key.get_pressed()
 
     def _check_collisions(self) -> None:
         pass
+
+    def _init_gamestate(self, new_game: bool) -> int:
+        response = 1
+        if new_game:
+            level = 1
+            new_actors, new_obstacles = ControllerLevel.generate_level(level)
+            new_projectiles: List[Projectile] = []
+            self._gamestate = GameState(new_actors, new_projectiles, new_obstacles, 1)
+        else:
+            full_path = self._select_file()
+            self._in_file_browser = True
+            try:
+                with open(full_path, "r", encoding="utf8") as f:
+                    json_string = f.read()
+                    self._gamestate = GameState.from_json(json_string)
+            except Exception as e:
+                response = -1
+                print(e)
+
+            return response
+
+    def _save_game(self) -> int:
+        response = 1
+        directory_name: str = self._select_directory()
+        full_path: str = directory_name + "/save1.json"
+        try:
+            with open(full_path, "w", encoding="utf8") as f:
+                f.write(self._gamestate.to_json())
+        except Exception as e:
+            response = -1
+            print(e)
+
+        return response
+
+    def _select_file(cls) -> str:
+        Tk().withdraw()
+        filename: str = fd.askopenfilename(
+            title="Select a save file",
+            filetypes=(("Json File", "*.json"),),
+        )
+        return filename
+
+    def _select_directory(self) -> str:
+        Tk().withdraw()
+        directory_name: str = fd.askdirectory(title="Select folder to save game")
+        return directory_name
 
     def _draw(self):
         self._screen.fill((0, 0, 0))
@@ -93,7 +146,6 @@ class ViewPyGame:
         else:
             self._draw_side_menu()
 
-
             for projectile in self._gamestate.projectiles:
                 pygame.draw.rect(
                     self._screen,
@@ -101,11 +153,18 @@ class ViewPyGame:
                     [projectile.x, projectile.y, projectile.width, projectile.height],
                 )
             for actor in self._gamestate.actors:
-                pygame.draw.rect(
-                    self._screen,
-                    (130, 0, 50),
-                    [actor.x, actor.y, actor.width, actor.height],
-                )
+                if isinstance(actor, Player):
+                    pygame.draw.rect(
+                        self._screen,
+                        (130, 0, 50),
+                        [actor.x, actor.y, actor.width, actor.height],
+                    )
+                elif isinstance(actor, EnemyStage1):
+                    pygame.draw.rect(
+                        self._screen,
+                        (200, 50, 130),
+                        [actor.x, actor.y, actor.width, actor.height],
+                    )
             for obstacle in self._gamestate.obstacles:
                 pygame.draw.rect(
                     self._screen,
