@@ -1,5 +1,6 @@
 from turtle import Screen
 from typing import List
+from gamestate import GameState
 
 from models.projectile import Projectile
 from settings import Settings
@@ -7,8 +8,18 @@ from settings import Settings
 
 class ControllerProjectile:
     @staticmethod
-    def move(projectiles: List[Projectile], delta_time: float):
-        for projectile in projectiles:
-            projectile.y = int(projectile.y + Settings.PROJECTILE_SPEED * projectile.direction * delta_time)
-            if projectile.y < 0 or projectile.y + projectile.height > Settings.SCREEN_HEIGHT: 
-                projectiles.remove(projectile)
+    def move(gamestate: GameState, delta_time: float):
+        for projectile in gamestate.projectiles:
+            projectile.y = int(
+                projectile.y
+                + Settings.PROJECTILE_SPEED * projectile.direction * delta_time
+            )
+            if (
+                projectile.y < 0
+                or projectile.y + projectile.height > Settings.SCREEN_HEIGHT
+            ):
+                gamestate.projectiles.remove(projectile)
+
+    @staticmethod
+    def receive_hit(projectile: Projectile, gamestate: GameState):
+        gamestate.projectiles.remove(projectile)

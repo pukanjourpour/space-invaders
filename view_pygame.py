@@ -2,6 +2,7 @@ from typing import Dict, Sequence, Tuple, List
 import pygame, time
 from controllers.controller_actor import ControllerActor
 from controllers.controller_level import ControllerLevel
+from controllers.controller_obstacle import ControllerObstacle
 from controllers.controller_projectile import ControllerProjectile
 from gamestate import GameState
 from models.enemy_stage_1 import EnemyStage1
@@ -11,21 +12,26 @@ from settings import Settings
 from tkinter import filedialog as fd, Tk
 
 
-class ViewPyGame:
-    def __init__(self):
+class ViewPyGame(object):
+    _instance = None
 
-        self._running: bool = True
-        self._gamestate: GameState = None
-        self._pause: bool = False
-        self._main_menu: bool = True
-        self._in_file_browser = False
-        pygame.init()
-        self._screen: pygame.Surface = pygame.display.set_mode(
-            (Settings.SCREEN_WIDTH, Settings.SCREEN_HEIGHT)
-        )
-        pygame.display.set_caption("Space Invaders")
+    def __new__(cls):
+        if cls._instance == None:
+            cls._instance = super(ViewPyGame, cls).__new__(cls)
+            cls._running: bool = True
+            cls._gamestate: GameState = None
+            cls._pause: bool = False
+            cls._main_menu: bool = True
+            cls._in_file_browser = False
+            pygame.init()
+            cls._screen: pygame.Surface = pygame.display.set_mode(
+                (Settings.SCREEN_WIDTH, Settings.SCREEN_HEIGHT)
+            )
+            pygame.display.set_caption("Space Invaders")
 
-        self._init_buttons()
+            cls._init_buttons(cls)
+
+        return cls._instance
 
     def run_game(self) -> None:
         start_time = time.time()
@@ -45,10 +51,9 @@ class ViewPyGame:
     def _update(self, delta_time: int) -> None:
         keyboard_input = self._get_keyboard_input()
         if not self._pause and not self._main_menu:
-            ControllerActor.act(
-                self._gamestate.actors, keyboard_input, self._gamestate, delta_time
-            )
-            ControllerProjectile.move(self._gamestate.projectiles, delta_time)
+            self._check_collisions()
+            ControllerActor.act(self._gamestate, keyboard_input, delta_time)
+            ControllerProjectile.move(self._gamestate, delta_time)
         self._check_events()
 
     def _check_events(self) -> None:
@@ -88,7 +93,43 @@ class ViewPyGame:
         return pygame.key.get_pressed()
 
     def _check_collisions(self) -> None:
-        pass
+        for p in self._gamestate.projectiles:
+            if p.direction == 1:
+                for o in self._gamestate.obstacles:
+                    if (
+                        p.y + p.height >= o.y
+                        and o.x <= p.x
+                        and o.x + o.width >= p.x + p.width
+                    ):
+                        ControllerObstacle.receive_hit(o, self._gamestate)
+                        ControllerProjectile.receive_hit(p, self._gamestate)
+                for a in self._gamestate.actors:
+                    if (
+                        isinstance(a, Player)
+                        and p.y + p.height >= a.y
+                        and a.x <= p.x
+                        and a.x + a.width >= p.x + p.width
+                    ):
+                        ControllerActor.receive_hit(a, self._gamestate)
+                        ControllerProjectile.receive_hit(p, self._gamestate)
+            elif p.direction == -1:
+                for o in self._gamestate.obstacles:
+                    if (
+                        p.y <= o.y + o.height
+                        and o.x <= p.x
+                        and o.x + o.width >= p.x + p.width
+                    ):
+                        ControllerObstacle.receive_hit(o, self._gamestate)
+                        ControllerProjectile.receive_hit(p, self._gamestate)
+                for a in self._gamestate.actors:
+                    if (
+                        not isinstance(a, Player)
+                        and p.y <= a.y + a.height
+                        and a.x <= p.x
+                        and a.x + a.width >= p.x + p.width
+                    ):
+                        ControllerActor.receive_hit(a, self._gamestate)
+                        ControllerProjectile.receive_hit(p, self._gamestate)
 
     def _init_gamestate(self, new_game: bool) -> int:
         response = 1
@@ -106,7 +147,7 @@ class ViewPyGame:
                     self._gamestate = GameState.from_json(json_string)
             except Exception as e:
                 response = -1
-                print(e)
+                print(type(e).__name__)
 
             return response
 
@@ -119,7 +160,7 @@ class ViewPyGame:
                 f.write(self._gamestate.to_json())
         except Exception as e:
             response = -1
-            print(e)
+            print(type(e).__name__)
 
         return response
 
@@ -203,7 +244,7 @@ class ViewPyGame:
             and btn["btn_y"] <= mouse_y <= btn["btn_y"] + btn["btn_height"]
         )
 
-    def _init_buttons(self) -> None:
+    def _init_buttons(cls) -> None:
         smallfont = pygame.font.SysFont("Corbel", Settings.SMALL_FONT_SIZE)
 
         text_new_game = smallfont.render("NEW GAME", True, (155, 255, 255))
@@ -213,7 +254,7 @@ class ViewPyGame:
         text_restart = smallfont.render("RESTART", True, (155, 255, 255))
         text_save_and_quit = smallfont.render("SAVE AND QUIT", True, (155, 255, 255))
 
-        self._btn_new_game: Dict[str, any] = {
+        cls._btn_new_game: Dict[str, any] = {
             "text": text_new_game,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_new_game.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -224,7 +265,7 @@ class ViewPyGame:
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        self._btn_load_game: Dict(str, any) = {
+        cls._btn_load_game: Dict(str, any) = {
             "text": text_load_game,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_load_game.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -238,7 +279,7 @@ class ViewPyGame:
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        self._btn_quit_game: Dict(str, any) = {
+        cls._btn_quit_game: Dict(str, any) = {
             "text": text_quit,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_quit.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -253,7 +294,7 @@ class ViewPyGame:
             "btn_height": Settings.BTN_HEIGHT,
         }
 
-        self._btn_continue: Dict[str, any] = {
+        cls._btn_continue: Dict[str, any] = {
             "text": text_continue,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_continue.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -264,7 +305,7 @@ class ViewPyGame:
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        self._btn_restart: Dict(str, any) = {
+        cls._btn_restart: Dict(str, any) = {
             "text": text_restart,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_restart.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -278,7 +319,7 @@ class ViewPyGame:
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        self._btn_save_and_quit: Dict(str, any) = {
+        cls._btn_save_and_quit: Dict(str, any) = {
             "text": text_save_and_quit,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_save_and_quit.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -293,13 +334,13 @@ class ViewPyGame:
             "btn_height": Settings.BTN_HEIGHT,
         }
 
-        self._buttons_main_menu: List[Dict[str, any]] = [
-            self._btn_new_game,
-            self._btn_load_game,
-            self._btn_quit_game,
+        cls._buttons_main_menu: List[Dict[str, any]] = [
+            cls._btn_new_game,
+            cls._btn_load_game,
+            cls._btn_quit_game,
         ]
-        self._buttons_pause: List[Dict[str, any]] = [
-            self._btn_continue,
-            self._btn_restart,
-            self._btn_save_and_quit,
+        cls._buttons_pause: List[Dict[str, any]] = [
+            cls._btn_continue,
+            cls._btn_restart,
+            cls._btn_save_and_quit,
         ]

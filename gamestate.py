@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 import json
-from re import L
-from typing import List, Optional, Union
-from dataclasses_json import DataClassJsonMixin, dataclass_json
+from typing import List
+from dataclasses_json import DataClassJsonMixin
 from models.actor import Actor
 from models.player import Player
 from models.enemy_stage_1 import EnemyStage1
@@ -54,7 +53,7 @@ class GameState(DataClassJsonMixin):
         self._level = value
 
     @property
-    def player_last_shot_time(self) -> List[Actor]:
+    def player_last_shot_time(self) -> float:
         return self._player_last_shot_time
 
     @player_last_shot_time.setter

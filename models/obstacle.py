@@ -6,7 +6,7 @@ from dataclasses_json import dataclass_json
 @dataclass_json
 @dataclass
 class Obstacle(Drawable):
-    _hit_count: int = 0
+    _hit_count: int = 3
 
     @property
     def hit_count(self) -> int:

@@ -14,19 +14,15 @@ from settings import Settings
 
 
 class ControllerActor:
-    _last_shot_time: float = 0
-
     @staticmethod
     def act(
-        actors: List[Actor],
-        inputs: Sequence[bool],
         gamestate: GameState,
+        inputs: Sequence[bool],
         delta_time: float,
     ):
-        player: Player = None
         enemies: List[Actor] = []
 
-        for actor in actors:
+        for actor in gamestate.actors:
             if isinstance(actor, Player):
                 if inputs[pygame.K_a]:
                     ControllerActor._move(actor, -1, delta_time)
@@ -55,8 +51,8 @@ class ControllerActor:
     def _shoot(player: Player, gamestate: GameState):
         current_time = time()
         if (
-            current_time - ControllerActor._last_shot_time >= 0.5
-            or ControllerActor._last_shot_time == 0
+            current_time - gamestate.player_last_shot_time >= 0.5
+            or gamestate.player_last_shot_time == 0
         ):
             projectile = Projectile(
                 int(player.x + player.width / 2 - Settings.PROJECTILE_WIDTH / 2),
@@ -67,4 +63,12 @@ class ControllerActor:
                 -1,
             )
             gamestate.projectiles.append(projectile)
-            ControllerActor._last_shot_time = current_time
+            gamestate.player_last_shot_time = current_time
+
+    @staticmethod
+    def receive_hit(actor: Actor, gamestate: GameState):
+        if isinstance(actor, Player):
+            actor.lives_count -= 1
+            # TODO handle game over
+        else:
+            gamestate.actors.remove(actor)
