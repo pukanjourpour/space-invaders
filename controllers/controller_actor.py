@@ -1,5 +1,6 @@
+from cmath import e
 from time import time
-from typing import List, Sequence
+from typing import List, Sequence, Union
 import pygame
 from gamestate import GameState
 
@@ -21,31 +22,57 @@ class ControllerActor:
         delta_time: float,
     ):
         enemies: List[Actor] = []
-
+        # current_time = time()
         for actor in gamestate.actors:
             if isinstance(actor, Player):
                 if inputs[pygame.K_a]:
-                    ControllerActor._move(actor, -1, delta_time)
+                    ControllerActor._move_player(actor, -1, delta_time)
                 if inputs[pygame.K_d]:
-                    ControllerActor._move(actor, 1, delta_time)
+                    ControllerActor._move_player(actor, 1, delta_time)
 
                 if inputs[pygame.K_SPACE]:
                     ControllerActor._shoot(actor, gamestate)
-            else:
+            elif isinstance(actor, (EnemyStage1, EnemyStage2, EnemyStage3)):
                 enemies.append(actor)
+        ControllerActor._move_enemies(enemies, gamestate, delta_time)
 
     @staticmethod
-    def _move(player: Player, direction: int, delta_time: float):
-        new_player_x = player.x + Settings.PLAYER_SPEED * direction * delta_time
+    def _move_player(player: Player, direction: int, delta_time: float):
+        new_player = player.x + Settings.PLAYER_SPEED * direction * delta_time
         if (
-            new_player_x + player.width <= Settings.SCREEN_WIDTH - 10
-            and new_player_x >= 10
+            new_player + player.width <= Settings.GAME_WINDOW_WIDTH - 10
+            and new_player >= 10
         ):
-            player.x = int(new_player_x)
-        if new_player_x <= 10:
+            player.x = int(new_player)
+        if new_player <= 10:
             player.x = 10
-        if new_player_x + player.width >= Settings.SCREEN_WIDTH - 10:
-            player.x = Settings.SCREEN_WIDTH - 10 - player.width
+        if new_player + player.width >= Settings.GAME_WINDOW_WIDTH - 10:
+            player.x = Settings.GAME_WINDOW_WIDTH - 10 - player.width
+
+    @staticmethod
+    def _move_enemies(enemies: List[Actor], gamestate: GameState, delta_time: float):
+        current_time = time()
+        if current_time - gamestate.enemy_last_movement_time >= 0.4:
+            for enemy in enemies:
+                if enemy.x <= 10:
+                    enemy.x = 10
+                    ControllerActor._change_enemies_direction(enemies)
+                    break
+                if enemy.x + enemy.width >= Settings.GAME_WINDOW_WIDTH - 10:
+                    enemy.x = Settings.GAME_WINDOW_WIDTH - 10 - enemy.width
+                    ControllerActor._change_enemies_direction(enemies)
+                    break
+
+            for enemy in enemies:
+                new_enemy_x = enemy.x + enemy.speed * delta_time * enemy.direction
+                enemy.x = int(new_enemy_x)
+
+            gamestate.enemy_last_movement_time = current_time
+
+    @staticmethod
+    def _change_enemies_direction(enemies: List[Actor]):
+        for enemy in enemies:
+            enemy.direction *= -1
 
     @staticmethod
     def _shoot(player: Player, gamestate: GameState):
@@ -70,5 +97,12 @@ class ControllerActor:
         if isinstance(actor, Player):
             actor.lives_count -= 1
             # TODO handle game over
-        else:
+        elif isinstance(actor, EnemyStage1):
+            gamestate.score += 10
+            gamestate.actors.remove(actor)
+        elif isinstance(actor, EnemyStage2):
+            gamestate.score += 50
+            gamestate.actors.remove(actor)
+        elif isinstance(actor, EnemyStage3):
+            gamestate.score += 100
             gamestate.actors.remove(actor)

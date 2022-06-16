@@ -11,12 +11,11 @@ class ControllerProjectile:
     def move(gamestate: GameState, delta_time: float):
         for projectile in gamestate.projectiles:
             projectile.y = int(
-                projectile.y
-                + Settings.PROJECTILE_SPEED * projectile.direction * delta_time
+                projectile.y + projectile.speed * projectile.direction * delta_time
             )
             if (
                 projectile.y < 0
-                or projectile.y + projectile.height > Settings.SCREEN_HEIGHT
+                or projectile.y + projectile.height > Settings.GAME_WINDOW_HEIGHT
             ):
                 gamestate.projectiles.remove(projectile)
 

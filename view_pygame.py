@@ -6,6 +6,8 @@ from controllers.controller_obstacle import ControllerObstacle
 from controllers.controller_projectile import ControllerProjectile
 from gamestate import GameState
 from models.enemy_stage_1 import EnemyStage1
+from models.enemy_stage_2 import EnemyStage2
+from models.enemy_stage_3 import EnemyStage3
 from models.player import Player
 from models.projectile import Projectile
 from settings import Settings
@@ -81,7 +83,7 @@ class ViewPyGame(object):
                         self._init_gamestate(new_game=True)
                         self._pause = False
                     elif self._check_hover((mouse_x, mouse_y), self._btn_save_and_quit):
-                        self._save_game()
+                        response = self._save_game()
                         if response == 1:
                             self._running = False
 
@@ -134,10 +136,7 @@ class ViewPyGame(object):
     def _init_gamestate(self, new_game: bool) -> int:
         response = 1
         if new_game:
-            level = 1
-            new_actors, new_obstacles = ControllerLevel.generate_level(level)
-            new_projectiles: List[Projectile] = []
-            self._gamestate = GameState(new_actors, new_projectiles, new_obstacles, 1)
+            self._set_level(1)
         else:
             full_path = self._select_file()
             self._in_file_browser = True
@@ -150,6 +149,18 @@ class ViewPyGame(object):
                 print(type(e).__name__)
 
             return response
+
+    def _set_level(self, new_level: int):
+        new_actors, new_obstacles = ControllerLevel.generate_level(new_level)
+        if new_level > 1:
+            for a in self._gamestate.actors:
+                if isinstance(a, Player):
+                    new_actors.append(a)
+                    break
+        new_projectiles: List[Projectile] = []
+        self._gamestate = GameState(
+            new_actors, new_projectiles, new_obstacles, new_level
+        )
 
     def _save_game(self) -> int:
         response = 1
@@ -206,6 +217,18 @@ class ViewPyGame(object):
                         (200, 50, 130),
                         [actor.x, actor.y, actor.width, actor.height],
                     )
+                elif isinstance(actor, EnemyStage2):
+                    pygame.draw.rect(
+                        self._screen,
+                        (250, 50, 100),
+                        [actor.x, actor.y, actor.width, actor.height],
+                    )
+                elif isinstance(actor, EnemyStage3):
+                    pygame.draw.rect(
+                        self._screen,
+                        (250, 0, 0),
+                        [actor.x, actor.y, actor.width, actor.height],
+                    )
             for obstacle in self._gamestate.obstacles:
                 pygame.draw.rect(
                     self._screen,
@@ -235,7 +258,40 @@ class ViewPyGame(object):
             )
 
     def _draw_side_menu(self) -> None:
-        pass
+        pygame.draw.rect(
+            self._screen,
+            (30, 30, 30),
+            [
+                Settings.SCREEN_WIDTH - Settings.SIDE_MENU_WIDTH,
+                0,
+                Settings.SIDE_MENU_WIDTH,
+                Settings.SIDE_MENU_HEIGHT,
+            ],
+        )
+        smallfont = pygame.font.SysFont("Corbel", Settings.SMALL_FONT_SIZE)
+        text_score = smallfont.render(str(self._gamestate.score), True, (155, 255, 255))
+        text_lives_count = smallfont.render(
+            str(self._gamestate.lives_count), True, (155, 255, 255)
+        )
+
+        self._screen.blit(
+            text_score,
+            (
+                Settings.SCREEN_WIDTH
+                - Settings.SIDE_MENU_WIDTH / 2
+                - text_score.get_width() / 2,
+                100,
+            ),
+        )
+        self._screen.blit(
+            text_lives_count,
+            (
+                Settings.SCREEN_WIDTH
+                - Settings.SIDE_MENU_WIDTH / 2
+                - text_score.get_width() / 2,
+                Settings.SIDE_MENU_HEIGHT - 100,
+            ),
+        )
 
     def _check_hover(self, mouse: Tuple[int, int], btn: Dict[str, any]) -> bool:
         mouse_x, mouse_y = mouse

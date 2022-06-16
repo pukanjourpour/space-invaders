@@ -18,7 +18,10 @@ class GameState(DataClassJsonMixin):
     _projectiles: List[Projectile]
     _obstacles: List[Obstacle]
     _level: int
+    _lives_count: int = 3
+    _score: int = 0
     _player_last_shot_time: float = 0
+    _enemy_last_movement_time: float = 0
 
     @property
     def actors(self) -> List[Actor]:
@@ -45,12 +48,28 @@ class GameState(DataClassJsonMixin):
         self._obstacles = value
 
     @property
-    def level(self) -> List[Actor]:
+    def level(self) -> int:
         return self._level
 
     @level.setter
     def level(self, value: int) -> None:
         self._level = value
+
+    @property
+    def lives_count(self) -> int:
+        return self._lives_count
+
+    @lives_count.setter
+    def lives_count(self, value) -> None:
+        self._lives_count = value
+
+    @property
+    def score(self) -> int:
+        return self._score
+
+    @score.setter
+    def score(self, value: int) -> None:
+        self._score = value
 
     @property
     def player_last_shot_time(self) -> float:
@@ -59,6 +78,14 @@ class GameState(DataClassJsonMixin):
     @player_last_shot_time.setter
     def player_last_shot_time(self, value: float) -> None:
         self._player_last_shot_time = value
+
+    @property
+    def enemy_last_movement_time(self) -> float:
+        return self._enemy_last_movement_time
+
+    @enemy_last_movement_time.setter
+    def enemy_last_movement_time(self, value: float) -> None:
+        self._enemy_last_movement_time = value
 
     def to_json(self) -> str:
         json_string = "{"
@@ -124,7 +151,14 @@ class GameState(DataClassJsonMixin):
         json_string += "],"
 
         json_string += '"level":' + str(self._level) + ","
-        json_string += '"player_last_shot_time":' + str(self._player_last_shot_time)
+        json_string += '"lives_count":' + str(self._lives_count) + ","
+        json_string += '"score":' + str(self._score) + ","
+        json_string += (
+            '"player_last_shot_time":' + str(self._player_last_shot_time) + ","
+        )
+        json_string += '"enemy_last_movement_time":' + str(
+            self._enemy_last_movement_time
+        )
 
         json_string += "}"
 
@@ -164,12 +198,18 @@ class GameState(DataClassJsonMixin):
             new_obstacles.append(Obstacle.from_dict(parsed_json["Obstacle"][idx]))
 
         new_level: int = parsed_json["level"]
+        new_lives_count: int = parsed_json["lives_count"]
+        new_score: int = parsed_json["score"]
         new_player_last_shot_time: int = parsed_json["player_last_shot_time"]
+        new_enemy_last_movement_time: int = parsed_json["enemy_last_movement_time"]
 
         return cls(
             new_actors,
             new_projectiles,
             new_obstacles,
             new_level,
+            new_lives_count,
+            new_score,
             new_player_last_shot_time,
+            new_enemy_last_movement_time,
         )
