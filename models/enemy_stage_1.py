@@ -1,17 +1,9 @@
 from pydantic.dataclasses import dataclass
-from models.actor import Actor
 from dataclasses_json import dataclass_json
+from models.enemy_basic import EnemyBasic
 
 
 @dataclass_json
 @dataclass
-class EnemyStage1(Actor):
-    _direction: int
-
-    @property
-    def direction(self) -> int:
-        return self._direction
-
-    @direction.setter
-    def direction(self, value: int) -> None:
-        self._direction = value
+class EnemyStage1(EnemyBasic):
+    pass

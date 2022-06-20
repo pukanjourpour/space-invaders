@@ -5,6 +5,7 @@ from controllers.controller_level import ControllerLevel
 from controllers.controller_obstacle import ControllerObstacle
 from controllers.controller_projectile import ControllerProjectile
 from gamestate import GameState
+from models.enemy_basic import EnemyBasic
 from models.enemy_stage_1 import EnemyStage1
 from models.enemy_stage_2 import EnemyStage2
 from models.enemy_stage_3 import EnemyStage3
@@ -25,6 +26,8 @@ class ViewPyGame(object):
             cls._pause: bool = False
             cls._main_menu: bool = True
             cls._in_file_browser = False
+            cls._basic_enemy_count = -1
+            cls._hit_count = 0
             pygame.init()
             cls._screen: pygame.Surface = pygame.display.set_mode(
                 (Settings.SCREEN_WIDTH, Settings.SCREEN_HEIGHT)
@@ -52,11 +55,30 @@ class ViewPyGame(object):
 
     def _update(self, delta_time: int) -> None:
         keyboard_input = self._get_keyboard_input()
-        if not self._pause and not self._main_menu:
+        if self._gamestate and self._gamestate.game_over:
+            self._main_menu = True
+            self._gamestate.game_over = False
+        elif not self._pause and not self._main_menu:
             self._check_collisions()
-            ControllerActor.act(self._gamestate, keyboard_input, delta_time)
-            ControllerProjectile.move(self._gamestate, delta_time)
+            if self._hit_count == self._basic_enemy_count:
+                if self._gamestate.level + 1 > 2:
+                    self._gamestate.game_over = True
+                else:
+                    self._gamestate.level += 1
+                    self._set_level(self._gamestate.level)
+                    self._hit_count = 0
+            else:
+                ControllerActor.act(self._gamestate, keyboard_input, delta_time)
+                ControllerProjectile.move(self._gamestate, delta_time)
+            
         self._check_events()
+
+    def _count_enemies(self) -> int:
+        count = 0
+        for actor in self._gamestate.actors:
+            if isinstance(actor, EnemyBasic):
+                count += 1
+        return count
 
     def _check_events(self) -> None:
         for event in pygame.event.get():
@@ -100,6 +122,7 @@ class ViewPyGame(object):
                 for o in self._gamestate.obstacles:
                     if (
                         p.y + p.height >= o.y
+                        and p.y <= o.y + o.height
                         and o.x <= p.x
                         and o.x + o.width >= p.x + p.width
                     ):
@@ -107,8 +130,10 @@ class ViewPyGame(object):
                         ControllerProjectile.receive_hit(p, self._gamestate)
                 for a in self._gamestate.actors:
                     if (
-                        isinstance(a, Player)
+                        a
+                        and isinstance(a, Player)
                         and p.y + p.height >= a.y
+                        and p.y <= a.y + a.height
                         and a.x <= p.x
                         and a.x + a.width >= p.x + p.width
                     ):
@@ -118,6 +143,7 @@ class ViewPyGame(object):
                 for o in self._gamestate.obstacles:
                     if (
                         p.y <= o.y + o.height
+                        and p.y + p.height >= o.y
                         and o.x <= p.x
                         and o.x + o.width >= p.x + p.width
                     ):
@@ -125,13 +151,20 @@ class ViewPyGame(object):
                         ControllerProjectile.receive_hit(p, self._gamestate)
                 for a in self._gamestate.actors:
                     if (
-                        not isinstance(a, Player)
+                        a
+                        and not isinstance(a, Player)
                         and p.y <= a.y + a.height
+                        and p.y + p.height >= a.y
                         and a.x <= p.x
                         and a.x + a.width >= p.x + p.width
                     ):
+                        self._hit_count += 1
                         ControllerActor.receive_hit(a, self._gamestate)
                         ControllerProjectile.receive_hit(p, self._gamestate)
+            for p2 in self._gamestate.projectiles:
+                if not p == p2 and p.y <= p2.y + p2.height and p.y + p.height >= p2.y and p2.x <= p.x and p2.x + p2.width >= p.x + p.width:
+                    ControllerProjectile.receive_hit(p, self._gamestate)
+                    ControllerProjectile.receive_hit(p2, self._gamestate)
 
     def _init_gamestate(self, new_game: bool) -> int:
         response = 1
@@ -151,15 +184,16 @@ class ViewPyGame(object):
             return response
 
     def _set_level(self, new_level: int):
-        new_actors, new_obstacles = ControllerLevel.generate_level(new_level)
+        new_actors, new_obstacles, enemy_count, new_enemy_x_movement_timeout, new_enemy_y_movement_timeout, new_enemy_shoot_timeout = ControllerLevel.generate_level(new_level)
         if new_level > 1:
             for a in self._gamestate.actors:
                 if isinstance(a, Player):
                     new_actors.append(a)
                     break
         new_projectiles: List[Projectile] = []
+        self._basic_enemy_count = enemy_count
         self._gamestate = GameState(
-            new_actors, new_projectiles, new_obstacles, new_level
+            new_actors, new_projectiles, new_obstacles, new_level, new_enemy_x_movement_timeout, new_enemy_y_movement_timeout, new_enemy_shoot_timeout
         )
 
     def _save_game(self) -> int:
@@ -205,34 +239,39 @@ class ViewPyGame(object):
                     [projectile.x, projectile.y, projectile.width, projectile.height],
                 )
             for actor in self._gamestate.actors:
-                if isinstance(actor, Player):
-                    pygame.draw.rect(
-                        self._screen,
-                        (130, 0, 50),
-                        [actor.x, actor.y, actor.width, actor.height],
-                    )
-                elif isinstance(actor, EnemyStage1):
-                    pygame.draw.rect(
-                        self._screen,
-                        (200, 50, 130),
-                        [actor.x, actor.y, actor.width, actor.height],
-                    )
-                elif isinstance(actor, EnemyStage2):
-                    pygame.draw.rect(
-                        self._screen,
-                        (250, 50, 100),
-                        [actor.x, actor.y, actor.width, actor.height],
-                    )
-                elif isinstance(actor, EnemyStage3):
-                    pygame.draw.rect(
-                        self._screen,
-                        (250, 0, 0),
-                        [actor.x, actor.y, actor.width, actor.height],
-                    )
+                if actor:
+                    if isinstance(actor, Player):
+                        pygame.draw.rect(
+                            self._screen,
+                            (130, 0, 50),
+                            [actor.x, actor.y, actor.width, actor.height],
+                        )
+                    elif isinstance(actor, EnemyStage1):
+                        pygame.draw.rect(
+                            self._screen,
+                            (200, 50, 130),
+                            [actor.x, actor.y, actor.width, actor.height],
+                        )
+                    elif isinstance(actor, EnemyStage2):
+                        pygame.draw.rect(
+                                self._screen,
+                                (250, 50, 100),
+                                [actor.x, actor.y, actor.width, actor.height],
+                            )
+                    elif isinstance(actor, EnemyStage3):
+                        pygame.draw.rect(
+                            self._screen,
+                            (250, 0, 0),
+                            [actor.x, actor.y, actor.width, actor.height],
+                        )
             for obstacle in self._gamestate.obstacles:
                 pygame.draw.rect(
                     self._screen,
-                    (0, 130, 50),
+                    (
+                        100 - (50 / Settings.OBSTACLE_HIT_COUNT) * obstacle.hit_count,
+                        (130 / Settings.OBSTACLE_HIT_COUNT) * obstacle.hit_count,
+                        (50 / Settings.OBSTACLE_HIT_COUNT) * obstacle.hit_count,
+                    ),
                     (obstacle.x, obstacle.y, obstacle.width, obstacle.height),
                 )
         pygame.display.flip()
@@ -269,18 +308,28 @@ class ViewPyGame(object):
             ],
         )
         smallfont = pygame.font.SysFont("Corbel", Settings.SMALL_FONT_SIZE)
-        text_score = smallfont.render(str(self._gamestate.score), True, (155, 255, 255))
-        text_lives_count = smallfont.render(
+        text_level = smallfont.render("Level " + str(self._gamestate.level), True, (155, 255, 255))
+        text_score = smallfont.render("Score: " + str(self._gamestate.score), True, (155, 255, 255))
+        text_lives_count = smallfont.render("Lives: " +
             str(self._gamestate.lives_count), True, (155, 255, 255)
         )
 
+        self._screen.blit(
+            text_level,
+            (
+                Settings.SCREEN_WIDTH
+                - Settings.SIDE_MENU_WIDTH / 2
+                - text_score.get_width() / 2,
+                100,
+            ),
+        )
         self._screen.blit(
             text_score,
             (
                 Settings.SCREEN_WIDTH
                 - Settings.SIDE_MENU_WIDTH / 2
                 - text_score.get_width() / 2,
-                100,
+                Settings.SIDE_MENU_HEIGHT / 2,
             ),
         )
         self._screen.blit(

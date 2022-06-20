@@ -1,3 +1,4 @@
+from ast import parse
 from dataclasses import dataclass
 import json
 from typing import List
@@ -18,10 +19,16 @@ class GameState(DataClassJsonMixin):
     _projectiles: List[Projectile]
     _obstacles: List[Obstacle]
     _level: int
+    _enemy_x_movement_timeout: float
+    _enemy_y_movement_timeout: float
+    _enemy_shoot_timeout: float
     _lives_count: int = 3
     _score: int = 0
     _player_last_shot_time: float = 0
-    _enemy_last_movement_time: float = 0
+    _enemy_last_x_movement_time: float = 0
+    _enemy_last_y_movement_time: float = 0
+    _enemy_last_shot_time: float = 0
+    _game_over: bool = False
 
     @property
     def actors(self) -> List[Actor]:
@@ -56,6 +63,30 @@ class GameState(DataClassJsonMixin):
         self._level = value
 
     @property
+    def enemy_x_movement_timeout(self) -> float:
+        return self._enemy_x_movement_timeout
+
+    @enemy_x_movement_timeout.setter
+    def enemy_x_movement_timeout(self, value: float) -> None:
+        self._enemy_x_movement_timeout = value
+
+    @property
+    def enemy_y_movement_timeout(self) -> float:
+        return self._enemy_y_movement_timeout
+
+    @enemy_y_movement_timeout.setter
+    def enemy_y_movement_timeout(self, value: float) -> None:
+        self._enemy_y_movement_timeout = value
+
+    @property
+    def enemy_shoot_timeout(self) -> float:
+        return self._enemy_shoot_timeout
+
+    @enemy_shoot_timeout.setter
+    def enemy_shoot_timeout(self, value: float) -> None:
+        self._enemy_shoot_timeout = value
+
+    @property
     def lives_count(self) -> int:
         return self._lives_count
 
@@ -80,12 +111,36 @@ class GameState(DataClassJsonMixin):
         self._player_last_shot_time = value
 
     @property
-    def enemy_last_movement_time(self) -> float:
-        return self._enemy_last_movement_time
+    def enemy_last_x_movement_time(self) -> float:
+        return self._enemy_last_x_movement_time
 
-    @enemy_last_movement_time.setter
-    def enemy_last_movement_time(self, value: float) -> None:
-        self._enemy_last_movement_time = value
+    @enemy_last_x_movement_time.setter
+    def enemy_last_x_movement_time(self, value: float) -> None:
+        self._enemy_last_x_movement_time = value
+
+    @property
+    def enemy_last_y_movement_time(self) -> float:
+        return self._enemy_last_y_movement_time
+
+    @enemy_last_y_movement_time.setter
+    def enemy_last_y_movement_time(self, value: float) -> None:
+        self._enemy_last_y_movement_time = value
+
+    @property
+    def enemy_last_shot_time(self) -> float:
+        return self._enemy_last_shot_time
+
+    @enemy_last_shot_time.setter
+    def enemy_last_shot_time(self, value: float) -> None:
+        self._enemy_last_shot_time = value
+
+    @property
+    def game_over(self) -> bool:
+        return self._game_over
+
+    @game_over.setter
+    def game_over(self, value: bool) -> None:
+        self._game_over = value
 
     def to_json(self) -> str:
         json_string = "{"
@@ -151,14 +206,15 @@ class GameState(DataClassJsonMixin):
         json_string += "],"
 
         json_string += '"level":' + str(self._level) + ","
+        json_string += '"enemy_x_movement_timeout":' + str(self._enemy_x_movement_timeout) + ","
+        json_string += '"enemy_y_movement_timeout":' + str(self._enemy_y_movement_timeout) + ","
+        json_string += '"enemy_shoot_timeout":' + str(self._enemy_shoot_timeout) + ","
         json_string += '"lives_count":' + str(self._lives_count) + ","
         json_string += '"score":' + str(self._score) + ","
-        json_string += (
-            '"player_last_shot_time":' + str(self._player_last_shot_time) + ","
-        )
-        json_string += '"enemy_last_movement_time":' + str(
-            self._enemy_last_movement_time
-        )
+        json_string += '"player_last_shot_time":' + str(self._player_last_shot_time) + ","
+        json_string += '"enemy_last_x_movement_time":' + str(self._enemy_last_x_movement_time) + ","
+        json_string += '"enemy_last_y_movement_time":' + str(self._enemy_last_y_movement_time) + ","
+        json_string += '"enemy_last_shot_time":' + str(self._enemy_last_shot_time)
 
         json_string += "}"
 
@@ -198,18 +254,28 @@ class GameState(DataClassJsonMixin):
             new_obstacles.append(Obstacle.from_dict(parsed_json["Obstacle"][idx]))
 
         new_level: int = parsed_json["level"]
+        new_enemy_x_movement_timeout: int = parsed_json["enemy_x_movement_timeout"]
+        new_enemy_y_movement_timeout: int = parsed_json["enemy_y_movement_timeout"]
+        new_enemy_shoot_timeout: int = parsed_json["enemy_shoot_timeout"]
         new_lives_count: int = parsed_json["lives_count"]
         new_score: int = parsed_json["score"]
         new_player_last_shot_time: int = parsed_json["player_last_shot_time"]
-        new_enemy_last_movement_time: int = parsed_json["enemy_last_movement_time"]
+        new_enemy_last_x_movement_time: int = parsed_json["enemy_last_x_movement_time"]
+        new_enemy_last_y_movement_time: int = parsed_json["enemy_last_y_movement_time"]
+        new_enemy_last_shot_time: int = parsed_json["enemy_last_shot_time"]
 
         return cls(
             new_actors,
             new_projectiles,
             new_obstacles,
             new_level,
+            new_enemy_x_movement_timeout,
+            new_enemy_y_movement_timeout,
+            new_enemy_shoot_timeout,
             new_lives_count,
             new_score,
             new_player_last_shot_time,
-            new_enemy_last_movement_time,
+            new_enemy_last_x_movement_time,
+            new_enemy_last_y_movement_time,
+            new_enemy_last_shot_time,
         )
