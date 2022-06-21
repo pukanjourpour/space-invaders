@@ -1,4 +1,4 @@
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 from models.actor import Actor
 from models.enemy_stage_1 import EnemyStage1

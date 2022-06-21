@@ -1,4 +1,4 @@
-from random import randint, random, choice
+from random import random, choice
 from time import time
 from typing import List, Sequence
 import pygame
@@ -125,16 +125,19 @@ class ControllerActor:
             1,
             )
             if isinstance(enemy, EnemyStage1):
-                if current_time - gamestate.enemy_last_shot_time >= gamestate.enemy_shoot_timeout and random() <= 0.1:
-                    gamestate.projectiles.append(projectile)
+                if current_time - gamestate.enemy_last_shot_time >= gamestate.enemy_shoot_timeout:
+                    if random() <= 0.5:
+                        gamestate.projectiles.append(projectile)
                     gamestate.enemy_last_shot_time = current_time
             elif isinstance(enemy, EnemyStage2):
-                if current_time - gamestate.enemy_last_shot_time >= gamestate.enemy_shoot_timeout - gamestate.enemy_shoot_timeout / 3 and  random() <= 0.2:
-                    gamestate.projectiles.append(projectile)
+                if current_time - gamestate.enemy_last_shot_time >= gamestate.enemy_shoot_timeout - gamestate.enemy_shoot_timeout / 3:
+                    if random() <= 0.5:
+                        gamestate.projectiles.append(projectile)
                     gamestate.enemy_last_shot_time = current_time
             elif isinstance(enemy, EnemyStage3):
-                if current_time - gamestate.enemy_last_shot_time >= gamestate.enemy_shoot_timeout - gamestate.enemy_shoot_timeout / 2 and random() <= 0.3:
-                    gamestate.projectiles.append(projectile)
+                if current_time - gamestate.enemy_last_shot_time >= gamestate.enemy_shoot_timeout - gamestate.enemy_shoot_timeout / 2:
+                    if random() <= 0.5:
+                        gamestate.projectiles.append(projectile)
                     gamestate.enemy_last_shot_time = current_time
 
     @staticmethod
