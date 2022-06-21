@@ -18,25 +18,29 @@ from tkinter import filedialog as fd, Tk
 class ViewPyGame(object):
     _instance = None
 
-    def __new__(cls):
-        if cls._instance == None:
-            cls._instance = super(ViewPyGame, cls).__new__(cls)
-            cls._running: bool = True
-            cls._gamestate: GameState = None
-            cls._pause: bool = False
-            cls._main_menu: bool = True
-            cls._in_file_browser = False
-            cls._basic_enemy_count = -1
-            cls._hit_count = 0
+    @property
+    def instance(self):
+        return self._instance
+
+    def __init__(self):
+        if ViewPyGame._instance == None:
+            ViewPyGame._instance = self
+            self._running: bool = True
+            self._gamestate: GameState = None
+            self._pause: bool = False
+            self._main_menu: bool = True
+            self._in_file_browser = False
+            self._basic_enemy_count = -1
+            self._hit_count = 0
             pygame.init()
-            cls._screen: pygame.Surface = pygame.display.set_mode(
+            self._screen: pygame.Surface = pygame.display.set_mode(
                 (Settings.SCREEN_WIDTH, Settings.SCREEN_HEIGHT)
             )
             pygame.display.set_caption("Space Invaders")
 
-            cls._init_buttons(cls)
-
-        return cls._instance
+            self._init_buttons()
+        else: 
+            raise Exception("Singleton cannot have multiple instances.")
 
     def run_game(self) -> None:
         start_time = time.time()
@@ -185,15 +189,17 @@ class ViewPyGame(object):
 
     def _set_level(self, new_level: int):
         new_actors, new_obstacles, enemy_count, new_enemy_x_movement_timeout, new_enemy_y_movement_timeout, new_enemy_shoot_timeout = ControllerLevel.generate_level(new_level)
+        new_lives_count = 3
         if new_level > 1:
             for a in self._gamestate.actors:
                 if isinstance(a, Player):
                     new_actors.append(a)
                     break
+            new_lives_count: int = self._gamestate.lives_count
         new_projectiles: List[Projectile] = []
         self._basic_enemy_count = enemy_count
         self._gamestate = GameState(
-            new_actors, new_projectiles, new_obstacles, new_level, new_enemy_x_movement_timeout, new_enemy_y_movement_timeout, new_enemy_shoot_timeout
+            new_actors, new_projectiles, new_obstacles, new_level, new_enemy_x_movement_timeout, new_enemy_y_movement_timeout, new_enemy_shoot_timeout, new_lives_count
         )
 
     def _save_game(self) -> int:
@@ -209,7 +215,7 @@ class ViewPyGame(object):
 
         return response
 
-    def _select_file(cls) -> str:
+    def _select_file(self) -> str:
         Tk().withdraw()
         filename: str = fd.askopenfilename(
             title="Select a save file",
@@ -344,12 +350,16 @@ class ViewPyGame(object):
 
     def _check_hover(self, mouse: Tuple[int, int], btn: Dict[str, any]) -> bool:
         mouse_x, mouse_y = mouse
+        btn_x = btn["btn_x"]
+        btn_y = btn["btn_y"]
+        btn_width = btn["btn_width"]
+        btn_height = btn["btn_height"]
         return (
-            btn["btn_x"] <= mouse_x <= btn["btn_x"] + btn["btn_width"]
-            and btn["btn_y"] <= mouse_y <= btn["btn_y"] + btn["btn_height"]
+            btn_x <= mouse_x <= btn_x + btn_width
+            and btn_y <= mouse_y <= btn_y + btn_height
         )
 
-    def _init_buttons(cls) -> None:
+    def _init_buttons(self) -> None:
         smallfont = pygame.font.SysFont("Corbel", Settings.SMALL_FONT_SIZE)
 
         text_new_game = smallfont.render("NEW GAME", True, (155, 255, 255))
@@ -359,7 +369,7 @@ class ViewPyGame(object):
         text_restart = smallfont.render("RESTART", True, (155, 255, 255))
         text_save_and_quit = smallfont.render("SAVE AND QUIT", True, (155, 255, 255))
 
-        cls._btn_new_game: Dict[str, any] = {
+        self._btn_new_game: Dict[str, any] = {
             "text": text_new_game,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_new_game.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -370,7 +380,7 @@ class ViewPyGame(object):
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        cls._btn_load_game: Dict(str, any) = {
+        self._btn_load_game: Dict[str, any] = {
             "text": text_load_game,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_load_game.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -384,7 +394,7 @@ class ViewPyGame(object):
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        cls._btn_quit_game: Dict(str, any) = {
+        self._btn_quit_game: Dict[str, any] = {
             "text": text_quit,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_quit.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -399,7 +409,7 @@ class ViewPyGame(object):
             "btn_height": Settings.BTN_HEIGHT,
         }
 
-        cls._btn_continue: Dict[str, any] = {
+        self._btn_continue: Dict[str, any] = {
             "text": text_continue,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_continue.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -410,7 +420,7 @@ class ViewPyGame(object):
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        cls._btn_restart: Dict(str, any) = {
+        self._btn_restart: Dict[str, any] = {
             "text": text_restart,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_restart.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -424,7 +434,7 @@ class ViewPyGame(object):
             "btn_width": Settings.BTN_WIDTH,
             "btn_height": Settings.BTN_HEIGHT,
         }
-        cls._btn_save_and_quit: Dict(str, any) = {
+        self._btn_save_and_quit: Dict[str, any] = {
             "text": text_save_and_quit,
             "text_x": Settings.SCREEN_WIDTH / 2 - text_save_and_quit.get_width() / 2,
             "text_y": Settings.SCREEN_HEIGHT / 2
@@ -439,13 +449,13 @@ class ViewPyGame(object):
             "btn_height": Settings.BTN_HEIGHT,
         }
 
-        cls._buttons_main_menu: List[Dict[str, any]] = [
-            cls._btn_new_game,
-            cls._btn_load_game,
-            cls._btn_quit_game,
+        self._buttons_main_menu: List[Dict[str, any]] = [
+            self._btn_new_game,
+            self._btn_load_game,
+            self._btn_quit_game,
         ]
-        cls._buttons_pause: List[Dict[str, any]] = [
-            cls._btn_continue,
-            cls._btn_restart,
-            cls._btn_save_and_quit,
+        self._buttons_pause: List[Dict[str, any]] = [
+            self._btn_continue,
+            self._btn_restart,
+            self._btn_save_and_quit,
         ]
